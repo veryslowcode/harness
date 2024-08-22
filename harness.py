@@ -1,4 +1,5 @@
 import sys
+import signal
 import argparse
 import subprocess
 from enum import Enum
@@ -51,11 +52,23 @@ def main() -> None:
     arguments = set_arguments()
     configuration = set_configuration(arguments.file)
 
+    # I have found shell is needed to work with Windows
+    # but causes problems on unix-like systems
+    shell = True if sys.platform == "win32" else False
     process = subprocess.Popen(
             arguments.command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True)
+            text=True,
+            shell=shell)
+
+    def signal_trap(sig, frame) -> None:
+        ''' Some processes may hang, this
+        is to try and prevent that '''
+        process.kill()
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, signal_trap)
 
     # Separate standard output and error output
     # Error output will default to all red
@@ -148,7 +161,7 @@ def set_configuration(file: str) -> Configuration:
     return configuration
 
 
-def log_stdout(pipe, configuration: Configuration, mode: Mode):
+def log_stdout(pipe, configuration: Configuration, mode: Mode) -> None:
     for line in iter(pipe.readline, ""):
         skip: bool = False  # Flag for continuation
 
@@ -178,19 +191,19 @@ def log_stdout(pipe, configuration: Configuration, mode: Mode):
             print(line, end="")
 
 
-def handle_line_mode(line: str, color: int):
+def handle_line_mode(line: str, color: int) -> None:
     print(
         f"{CSI}{color}m{line}{RST_SUFFIX}",
         end="")
 
 
-def handle_word_mode(line: str, key: str, color: int):
+def handle_word_mode(line: str, key: str, color: int) -> None:
     print(
         line.replace(key, f"{CSI}{color}m{key}{RST_SUFFIX}"),
         end="")
 
 
-def log_stderr(pipe):
+def log_stderr(pipe) -> None:
     for line in iter(pipe.readline, ""):
         print(f"{ERR_PREFIX}{line}{RST_SUFFIX}", end="")
 
