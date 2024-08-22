@@ -50,15 +50,20 @@ def handled(func):
 def main() -> None:
     arguments = set_arguments()
     configuration = set_configuration(arguments.file)
+
     process = subprocess.Popen(
             arguments.command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True)
+
+    # Separate standard output and error output
+    # Error output will default to all red
     with process.stdout:
         log_stdout(process.stdout, configuration, arguments.mode)
     with process.stderr:
         log_stderr(process.stderr)
+
     process.wait()
 
 
