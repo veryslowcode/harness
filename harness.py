@@ -1,6 +1,6 @@
 import sys
 import argparse
-# import subprocess
+import subprocess
 from enum import Enum
 from dataclasses import dataclass
 
@@ -21,7 +21,7 @@ class Mode(Enum):
 
 @dataclass
 class Arguments:
-    command: str  # Command is required, the rest are optional
+    command: list  # Command is required, the rest are optional
     mode: int = Mode.LINE
     file: str = "harness.conf"
 
@@ -50,7 +50,16 @@ def handled(func):
 def main() -> None:
     arguments = set_arguments()
     configuration = set_configuration(arguments.file)
-    print(configuration)
+    process = subprocess.Popen(
+            arguments.command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True)
+    with process.stdout:
+        log_stdout(process.stdout, configuration, arguments.mode)
+    with process.stderr:
+        log_stderr(process.stderr)
+    process.wait()
 
 
 @handled
@@ -69,7 +78,7 @@ def set_arguments() -> Arguments:
                         help="Colorization method ('line' or 'word')")
 
     parsed_args = parser.parse_args()
-    arguments = Arguments(parsed_args.command)
+    arguments = Arguments(parsed_args.command.split(" "))
 
     if parsed_args.file is not None:
         # This will be checked when
@@ -132,6 +141,53 @@ def set_configuration(file: str) -> Configuration:
             configuration.colors.append(color)
 
     return configuration
+
+
+def log_stdout(pipe, configuration: Configuration, mode: Mode):
+    for line in iter(pipe.readline, ""):
+        skip: bool = False  # Flag for continuation
+
+        for index, key in enumerate(configuration.keywords):
+            if str(line).__contains__(key):
+                color = configuration.colors[index]
+                skip = True
+
+                if mode == Mode.LINE:
+                    handle_line_mode(line, color)
+                else:
+                    # Key is needed to ensure all
+                    # occurrences are colored
+                    handle_word_mode(line, key, color)
+
+                break
+
+        if skip:  # Cleaner than nested conditionals
+            continue
+
+        # Handle the base color case
+        if configuration.hasBase:
+            print(
+                f"{CSI}{configuration.baseColor}m{line}{RST_SUFFIX}",
+                end="")
+        else:
+            print(line, end="")
+
+
+def handle_line_mode(line: str, color: int):
+    print(
+        f"{CSI}{color}m{line}{RST_SUFFIX}",
+        end="")
+
+
+def handle_word_mode(line: str, key: str, color: int):
+    print(
+        line.replace(key, f"{CSI}{color}m{key}{RST_SUFFIX}"),
+        end="")
+
+
+def log_stderr(pipe):
+    for line in iter(pipe.readline, ""):
+        print(f"{ERR_PREFIX}{line}{RST_SUFFIX}", end="")
 
 
 if __name__ == '__main__':
