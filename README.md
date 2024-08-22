@@ -29,6 +29,13 @@ options:
   -m MODE, --mode MODE  Colorization method (`line` or `word`)
 ```
 
+It is recommended to add to terminal config (i.e., `.bashrc`, `powershell profile`)
+
+Example for `.bashrc`:
+```sh
+harness() { python3 <PROJECT PATH>/harness.py "$@" ;}
+```
+
 ### Config file
 
 The config file can be named anything, if the
