@@ -199,7 +199,7 @@ def handle_line_mode(line: str, color: int) -> None:
 
 def handle_word_mode(line: str, key: str, color: int) -> None:
     print(
-        line.replace(key, f"{CSI}{color}m{key}{RST_SUFFIX}"),
+        line.replace(key, f"{CSI}38;5;{color}m{key}{RST_SUFFIX}"),
         end="")
 
 
