@@ -34,7 +34,7 @@ options:
   -f FILE, --file FILE  Configuration file (defaults to 'harness.conf')
   -m MODE, --mode MODE  Colorization method: 'line' or 'word' (defaults to 'line')
   -s STYLE, --style STYLE
-                        Color style: '8bit' or '8bit' (defaults to '8bit')
+                        Color style: '2bit' or '8bit' (defaults to '8bit')
 ```
 
 It is recommended to add to terminal config (i.e., `.bashrc`, `powershell profile`)

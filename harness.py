@@ -103,7 +103,7 @@ def set_arguments() -> Arguments:
                         help="Colorization method: 'line' or 'word' " +
                         "(defaults to 'line')")
     parser.add_argument("-s", "--style",
-                        help="Color style: '8bit' or '8bit' " +
+                        help="Color style: '2bit' or '8bit' " +
                         "(defaults to '8bit')")
 
     parsed_args = parser.parse_args()
