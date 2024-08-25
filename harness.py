@@ -21,7 +21,7 @@ class Mode(Enum):
 
 
 class Style(Enum):
-    Bit2 = 0  # Uses 2 bit Ansi style output
+    Bit4 = 0  # Uses 4 bit Ansi style output
     Bit8 = 1  # Uses 8 bit Ansi style output
 
 
@@ -103,7 +103,7 @@ def set_arguments() -> Arguments:
                         help="Colorization method: 'line' or 'word' " +
                         "(defaults to 'line')")
     parser.add_argument("-s", "--style",
-                        help="Color style: '2bit' or '8bit' " +
+                        help="Color style: '4bit' or '8bit' " +
                         "(defaults to '8bit')")
 
     parsed_args = parser.parse_args()
@@ -133,15 +133,15 @@ def set_arguments() -> Arguments:
     if parsed_args.style is not None:
         style = parsed_args.style.lower()
 
-        if style == "2bit":
-            arguments.style = Style.Bit2
+        if style == "4bit":
+            arguments.style = Style.Bit4
         elif style == "8bit":
             arguments.style = Style.Bit8
         else:
             # Raising an exception is better feedback on usage
             # vs. default/silent handling
             error = argparse.ArgumentTypeError("Invalid style! " +
-                                               "'2bit' or '8bit' expected")
+                                               "'4bit' or '8bit' expected")
             parser.print_help()
             print('\n')
             raise error
