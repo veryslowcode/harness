@@ -20,10 +20,16 @@ class Mode(Enum):
     WORD = 1  # Matching words will be colored separately
 
 
+class Style(Enum):
+    Bit2 = 0  # Uses 2 bit Ansi style output
+    Bit8 = 1  # Uses 8 bit Ansi style output
+
+
 @dataclass
 class Arguments:
     command: list  # Command is required, the rest are optional
     mode: int = Mode.LINE
+    style: int = Style.Bit8
     file: str = "harness.conf"
 
 
@@ -73,7 +79,8 @@ def main() -> None:
     # Separate standard output and error output
     # Error output will default to all red
     with process.stdout:
-        log_stdout(process.stdout, configuration, arguments.mode)
+        log_stdout(process.stdout, configuration,
+                   arguments.mode, arguments.style)
     with process.stderr:
         log_stderr(process.stderr)
 
@@ -93,7 +100,11 @@ def set_arguments() -> Arguments:
     parser.add_argument("-f", "--file",
                         help="Configuration file (defaults to 'harness.conf')")
     parser.add_argument("-m", "--mode",
-                        help="Colorization method ('line' or 'word')")
+                        help="Colorization method: 'line' or 'word' " +
+                        "(defaults to 'line'")
+    parser.add_argument("-s", "--style",
+                        help="Color style: '8bit' or '8bit' " +
+                        "(defaults to '8bit')")
 
     parsed_args = parser.parse_args()
     arguments = Arguments(parsed_args.command.split(" "))
@@ -115,6 +126,22 @@ def set_arguments() -> Arguments:
             # vs. default/silent handling
             error = argparse.ArgumentTypeError("Invalid mode! " +
                                                "'word' or 'line' expected")
+            parser.print_help()
+            print('\n')
+            raise error
+
+    if parsed_args.style is not None:
+        style = parsed_args.style.lower()
+
+        if style == "2bit":
+            arguments.style = Style.Bit2
+        elif style == "8bit":
+            arguments.style = Style.Bit8
+        else:
+            # Raising an exception is better feedback on usage
+            # vs. default/silent handling
+            error = argparse.ArgumentTypeError("Invalid style! " +
+                                               "'2bit' or '8bit' expected")
             parser.print_help()
             print('\n')
             raise error
@@ -161,7 +188,8 @@ def set_configuration(file: str) -> Configuration:
     return configuration
 
 
-def log_stdout(pipe, configuration: Configuration, mode: Mode) -> None:
+def log_stdout(pipe, configuration: Configuration,
+               mode: Mode, style: Style) -> None:
     for line in iter(pipe.readline, ""):
         skip: bool = False  # Flag for continuation
 
@@ -171,11 +199,11 @@ def log_stdout(pipe, configuration: Configuration, mode: Mode) -> None:
                 skip = True
 
                 if mode == Mode.LINE:
-                    handle_line_mode(line, color)
+                    handle_line_mode(line, color, style)
                 else:
                     # Key is needed to ensure all
                     # occurrences are colored
-                    handle_word_mode(line, key, color)
+                    handle_word_mode(line, key, color, style)
 
                 break
 
@@ -191,15 +219,17 @@ def log_stdout(pipe, configuration: Configuration, mode: Mode) -> None:
             print(line, end="")
 
 
-def handle_line_mode(line: str, color: int) -> None:
+def handle_line_mode(line: str, color: int, style: Style) -> None:
+    prefix = f"{CSI}38;5;" if style == Style.Bit8 else f"{CSI}"
     print(
-        f"{CSI}{color}m{line}{RST_SUFFIX}",
+        f"{prefix}{color}m{line}{RST_SUFFIX}",
         end="")
 
 
-def handle_word_mode(line: str, key: str, color: int) -> None:
+def handle_word_mode(line: str, key: str, color: int, style: Style) -> None:
+    prefix = f"{CSI}38;5;" if style == Style.Bit8 else f"{CSI}"
     print(
-        line.replace(key, f"{CSI}38;5;{color}m{key}{RST_SUFFIX}"),
+        line.replace(key, f"{prefix}{color}m{key}{RST_SUFFIX}"),
         end="")
 
 
