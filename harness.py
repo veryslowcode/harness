@@ -101,7 +101,7 @@ def set_arguments() -> Arguments:
                         help="Configuration file (defaults to 'harness.conf')")
     parser.add_argument("-m", "--mode",
                         help="Colorization method: 'line' or 'word' " +
-                        "(defaults to 'line'")
+                        "(defaults to 'line')")
     parser.add_argument("-s", "--style",
                         help="Color style: '8bit' or '8bit' " +
                         "(defaults to '8bit')")

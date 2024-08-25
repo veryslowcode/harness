@@ -10,13 +10,19 @@ the color associated with a given keyword.
 This application should work on the *big three*
 (i.e., Linux, MacOS, Windows).
 
+> [!NOTE]
+> This is a simple script and by no means robust.
+> It uses basic ANSI escape sequences to modify
+> output. Ensure your terminal supports ANSI
+> escape sequences.
+
 ## Build Requirements
 python >= v3.10.x
 
 ## Usage
 
 ```sh
-usage: harness.py [-h] [-f FILE] [-m MODE] command
+usage: harness.py [-h] [-f FILE] [-m MODE] [-s STYLE] command
 
 Capture and colorize log output
 
@@ -25,8 +31,10 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
-  -f FILE, --file FILE  Configuration file (defaults to `harness.conf`)
-  -m MODE, --mode MODE  Colorization method (`line` or `word`)
+  -f FILE, --file FILE  Configuration file (defaults to 'harness.conf')
+  -m MODE, --mode MODE  Colorization method: 'line' or 'word' (defaults to 'line')
+  -s STYLE, --style STYLE
+                        Color style: '8bit' or '8bit' (defaults to '8bit')
 ```
 
 It is recommended to add to terminal config (i.e., `.bashrc`, `powershell profile`)
