@@ -22,7 +22,7 @@ python >= v3.10.x
 ## Usage
 
 ```sh
-usage: harness.py [-h] [-f FILE] [-m MODE] [-s STYLE] command
+usage: harness.py [-h] [-f FILE] [-m MODE] [-s STYLE] [-i] command
 
 Capture and colorize log output
 
@@ -35,14 +35,21 @@ options:
   -m MODE, --mode MODE  Colorization method: 'line' or 'word' (defaults to 'line')
   -s STYLE, --style STYLE
                         Color style: '4bit' or '8bit' (defaults to '8bit')
+  -i, --ignore          Ignore case of matched word (no value expected)
 ```
 
-It is recommended to add to terminal config (i.e., `.bashrc`, `powershell profile`)
+It is recommended to add call-function to terminal config (i.e., `.bashrc`, `powershell profile`)
 
 Example for `.bashrc`:
 ```sh
 harness() { python3 <PROJECT PATH>/harness.py "$@" ;}
 ```
+
+>[!NOTE]
+> Using `word` mode allows coloring of different words on the same line
+
+>[!NOTE]
+> Using the `-i` flag will lowercase the matched words
 
 ### Config file
 

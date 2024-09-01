@@ -1,3 +1,4 @@
+import re
 import sys
 import signal
 import argparse
@@ -28,9 +29,10 @@ class Style(Enum):
 @dataclass
 class Arguments:
     command: list  # Command is required, the rest are optional
-    mode: int = Mode.LINE
-    style: int = Style.Bit8
-    file: str = "harness.conf"
+    ignore:  bool = False
+    mode:     int = Mode.LINE
+    style:    int = Style.Bit8
+    file:     str = "harness.conf"
 
 
 @dataclass
@@ -79,8 +81,7 @@ def main() -> None:
     # Separate standard output and error output
     # Error output will default to all red
     with process.stdout:
-        log_stdout(process.stdout, configuration,
-                   arguments.mode, arguments.style)
+        log_stdout(process.stdout, configuration, arguments)
     with process.stderr:
         log_stderr(process.stderr)
 
@@ -105,6 +106,10 @@ def set_arguments() -> Arguments:
     parser.add_argument("-s", "--style",
                         help="Color style: '4bit' or '8bit' " +
                         "(defaults to '8bit')")
+
+    # Unlike the other arguments, this one doesn't expect a value
+    parser.add_argument("-i", "--ignore", action="store_true",
+                        help="Ignore case of matched word (no value expected)")
 
     parsed_args = parser.parse_args()
     arguments = Arguments(parsed_args.command.split(" "))
@@ -145,6 +150,8 @@ def set_arguments() -> Arguments:
             parser.print_help()
             print('\n')
             raise error
+
+    arguments.ignore = parsed_args.ignore
 
     return arguments
 
@@ -189,23 +196,31 @@ def set_configuration(file: str) -> Configuration:
 
 
 def log_stdout(pipe, configuration: Configuration,
-               mode: Mode, style: Style) -> None:
+               arguments: Arguments) -> None:
     for line in iter(pipe.readline, ""):
-        skip: bool = False  # Flag for continuation
+        skip:   bool = False  # Flag for continuation
+        output: bool = False  # Flag for print responsibility
 
         for index, key in enumerate(configuration.keywords):
-            if str(line).__contains__(key):
+            pattern = re.compile(key) if arguments.ignore is False \
+                    else re.compile(key, re.IGNORECASE)
+
+            if re.search(pattern, line) is not None:
                 color = configuration.colors[index]
                 skip = True
 
-                if mode == Mode.LINE:
-                    handle_line_mode(line, color, style)
+                if arguments.mode == Mode.LINE:
+                    handle_line_mode(line, color, arguments.style)
+                    break  # Word mode supports multiple-match
                 else:
+                    output = True
                     # Key is needed to ensure all
                     # occurrences are colored
-                    handle_word_mode(line, key, color, style)
+                    line = handle_word_mode(line, key, color,
+                                            arguments.style, arguments.ignore)
 
-                break
+        if output:  # Simple way to allow multiple-match
+            print(line, end="")
 
         if skip:  # Cleaner than nested conditionals
             continue
@@ -226,11 +241,13 @@ def handle_line_mode(line: str, color: int, style: Style) -> None:
         end="")
 
 
-def handle_word_mode(line: str, key: str, color: int, style: Style) -> None:
+def handle_word_mode(line: str, key: str, color: int,
+                     style: Style, ignore: bool) -> str:
     prefix = f"{CSI}38;5;" if style == Style.Bit8 else f"{CSI}"
-    print(
-        line.replace(key, f"{prefix}{color}m{key}{RST_SUFFIX}"),
-        end="")
+    replace = f"{prefix}{color}m{key}{RST_SUFFIX}"
+    update = re.sub(key, replace, line) if ignore is False \
+        else re.sub(key, replace, line, flags=re.IGNORECASE)
+    return update
 
 
 def log_stderr(pipe) -> None:
