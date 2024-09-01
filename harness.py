@@ -227,8 +227,10 @@ def log_stdout(pipe, configuration: Configuration,
 
         # Handle the base color case
         if configuration.hasBase:
+            prefix = f"{CSI}38;5;" if arguments.style == Style.Bit8 \
+                    else f"{CSI}"
             print(
-                f"{CSI}{configuration.baseColor}m{line}{RST_SUFFIX}",
+                f"{prefix}{configuration.baseColor}m{line}{RST_SUFFIX}",
                 end="")
         else:
             print(line, end="")
