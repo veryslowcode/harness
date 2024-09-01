@@ -1,9 +1,13 @@
 # Harness
 
-Harness that wraps any command line program to parse the
-log output of the application. It looks for keywords within
-the output, and colors a slice of the output according to
-the color associated with a given keyword.
+Simple script to highlight the logs that you want to see, 
+and can mute those that you don't. It wraps any command 
+line program to parse the log output of the application. 
+It looks for keywords within the output, and colors a 
+slice of the output according to the color associated 
+with a given keyword.
+
+![Demo](demo.png)
 
 ## Operating System Support
 
