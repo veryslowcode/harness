@@ -4,6 +4,7 @@ import signal
 import argparse
 import subprocess
 from enum import Enum
+from pathlib import Path
 from dataclasses import dataclass
 
 # Trim stacktrace
@@ -118,6 +119,9 @@ def set_arguments() -> Arguments:
         # This will be checked when
         # attempting to parse the file
         arguments.file = parsed_args.file
+    else:
+        scriptdir = Path(__file__).parent
+        arguments.file = Path(scriptdir, "harness.conf")
 
     if parsed_args.mode is not None:
         mode = parsed_args.mode.lower()

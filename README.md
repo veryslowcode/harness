@@ -59,6 +59,10 @@ harness() { python3 <PROJECT PATH>/harness.py "$@" ;}
 
 The config file can be named anything, if the
 file flag is passed to specify the path/name.
+If no file is specified, the script look for
+`harness.conf` in the directory in which this
+script is located.
+
 
 The expected format for the configuration file is:<br/>
     [KEY]=[COLOR]
