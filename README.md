@@ -38,7 +38,7 @@ options:
   -f FILE, --file FILE  Configuration file (defaults to 'harness.conf')
   -m MODE, --mode MODE  Colorization method: 'line' or 'word' (defaults to 'line')
   -s STYLE, --style STYLE
-                        Color style: '4bit' or '8bit' (defaults to '8bit')
+                        Color style: '4bit', '8bit', or '24bit' (defaults to '8bit')
   -i, --ignore          Ignore case of matched word (no value expected)
 ```
 

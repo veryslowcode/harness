@@ -10,11 +10,9 @@ from dataclasses import dataclass
 # Trim stacktrace
 sys.tracebacklimit = 0
 
-ESC = "\x1b"     # Escape sequence
-CSI = f"{ESC}["  # Control sequence indicator
-
-ERR_PREFIX = f"{CSI}31m"  # Error prefix, red
-RST_SUFFIX = f"{CSI}0m"   # Reset suffix
+ESC = "\x1b"             # Escape sequence
+CSI = f"{ESC}["          # Control sequence indicator
+RST_SUFFIX = f"{CSI}0m"  # Reset suffix
 
 
 class Mode(Enum):
@@ -25,6 +23,7 @@ class Mode(Enum):
 class Style(Enum):
     Bit4 = 0  # Uses 4 bit Ansi style output
     Bit8 = 1  # Uses 8 bit Ansi style output
+    Bit24 = 2  # Uses RGB Ansi style output
 
 
 @dataclass
@@ -40,7 +39,7 @@ class Arguments:
 class Configuration:
     keywords: list  # Indexed list of keywords to match
     colors:   list  # Indexed list of colors synchronized with keywords
-    baseColor: int  # Indicates the color that non-matched output will be
+    baseColor: str  # Indicates the color that non-matched output will be
     hasBase:  bool  # Flag to indicate if a base color was defined
 
 
@@ -52,14 +51,14 @@ def handled(func):
             return func(*args, **kwargs)
         except Exception as e:
             # Style the output for easier detection
-            print(f"{ERR_PREFIX}{e}{RST_SUFFIX}")
+            print(e)
             exit(1)
     return wrapper
 
 
 def main() -> None:
     arguments = set_arguments()
-    configuration = set_configuration(arguments.file)
+    configuration = set_configuration(arguments.file, arguments.style)
 
     # I have found shell is needed to work with Windows
     # but causes problems on unix-like systems
@@ -84,7 +83,7 @@ def main() -> None:
     with process.stdout:
         log_stdout(process.stdout, configuration, arguments)
     with process.stderr:
-        log_stderr(process.stderr)
+        log_stderr(process.stderr, arguments)
 
     process.wait()
 
@@ -105,7 +104,7 @@ def set_arguments() -> Arguments:
                         help="Colorization method: 'line' or 'word' " +
                         "(defaults to 'line')")
     parser.add_argument("-s", "--style",
-                        help="Color style: '4bit' or '8bit' " +
+                        help="Color style: '4bit', '8bit', or '24bit' " +
                         "(defaults to '8bit')")
 
     # Unlike the other arguments, this one doesn't expect a value
@@ -146,11 +145,13 @@ def set_arguments() -> Arguments:
             arguments.style = Style.Bit4
         elif style == "8bit":
             arguments.style = Style.Bit8
+        elif style == "24bit":
+            arguments.style = Style.Bit24
         else:
             # Raising an exception is better feedback on usage
             # vs. default/silent handling
-            error = argparse.ArgumentTypeError("Invalid style! " +
-                                               "'4bit' or '8bit' expected")
+            error = argparse.ArgumentTypeError("Invalid style! '4bit', " +
+                                               "'8bit', '24bit' expected")
             parser.print_help()
             print('\n')
             raise error
@@ -161,7 +162,7 @@ def set_arguments() -> Arguments:
 
 
 @handled
-def set_configuration(file: str) -> Configuration:
+def set_configuration(file: str, style: Style) -> Configuration:
     handle = open(file, "r")  # This may throw but is handled by decorator
     content = handle.readlines()
     configuration = Configuration([], [], 0, False)
@@ -180,14 +181,21 @@ def set_configuration(file: str) -> Configuration:
                             "following format [KEY]=[COLOR]")
 
         keyword = values[0].strip()
+        color = values[1].strip()
 
-        try:
-            # Though not necessary, if the configuration
-            # is invalid, this will produce a helpful
-            # indication vs. it just not working/coloring
-            color = int(values[1].strip())
-        except Exception:
-            raise Exception("Color must be an integer")
+        # Though not necessary, if the configuration
+        # is invalid, this will produce a helpful
+        # indication vs. it just not working/coloring
+        if style == Style.Bit24:
+            split = color.split(",")
+            if len(split) != 3:
+                raise Exception("Invalid RGB color format "
+                                f"for {keyword}={color}")
+        else:
+            try:
+                int(color)
+            except Exception:
+                raise Exception("Color must be an integer")
 
         if keyword.lower() == "base":
             configuration.hasBase = True
@@ -231,34 +239,45 @@ def log_stdout(pipe, configuration: Configuration,
 
         # Handle the base color case
         if configuration.hasBase:
-            prefix = f"{CSI}38;5;" if arguments.style == Style.Bit8 \
-                    else f"{CSI}"
-            print(
-                f"{prefix}{configuration.baseColor}m{line}{RST_SUFFIX}",
-                end="")
+            print(colorize(line, configuration.baseColor,
+                           arguments.style), end="")
         else:
             print(line, end="")
 
 
-def handle_line_mode(line: str, color: int, style: Style) -> None:
-    prefix = f"{CSI}38;5;" if style == Style.Bit8 else f"{CSI}"
-    print(
-        f"{prefix}{color}m{line}{RST_SUFFIX}",
-        end="")
+def handle_line_mode(line: str, color: str, style: Style) -> None:
+    print(colorize(line, color, style), end="")
 
 
-def handle_word_mode(line: str, key: str, color: int,
+def handle_word_mode(line: str, key: str, color: str,
                      style: Style, ignore: bool) -> str:
-    prefix = f"{CSI}38;5;" if style == Style.Bit8 else f"{CSI}"
-    replace = f"{prefix}{color}m{key}{RST_SUFFIX}"
+    replace = colorize(key, color, style)
     update = re.sub(key, replace, line) if ignore is False \
         else re.sub(key, replace, line, flags=re.IGNORECASE)
     return update
 
 
-def log_stderr(pipe) -> None:
+def colorize(text: str, color: str, style: Style) -> str:
+    match style:
+        case Style.Bit4:
+            return f"{CSI}{color}m{text}{RST_SUFFIX}"
+        case Style.Bit8:
+            return f"{CSI}38;5;{color}m{text}{RST_SUFFIX}"
+        case Style.Bit24:
+            r, g, b = color.split(",")
+            return f"{CSI}38;2;{r};{g};{b}m{text}{RST_SUFFIX}"
+
+
+def log_stderr(pipe, arguments: Arguments) -> None:
+    if arguments.style == Style.Bit24:
+        red = "211,70,65"
+    elif arguments.style == Style.Bit8:
+        red = "160"
+    else:
+        red = "31"
+
     for line in iter(pipe.readline, ""):
-        print(f"{ERR_PREFIX}{line}{RST_SUFFIX}", end="")
+        print(colorize(line, red, arguments.style), end="")
 
 
 if __name__ == '__main__':
