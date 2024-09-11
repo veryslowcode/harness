@@ -36,7 +36,7 @@ class Arguments:
     command: list  # Command is required, the rest are optional
     ignore:  bool = False
     mode:     int = Mode.LINE
-    style:    int = Style.Bit8
+    style:    int = Style.Bit24
     file:     str = "harness.conf"
     # }}}
 
@@ -205,7 +205,7 @@ def set_arguments() -> Arguments:
                         "(defaults to 'line')")
     parser.add_argument("-s", "--style",
                         help="Color style: '4bit', '8bit', or '24bit' " +
-                        "(defaults to '8bit')")
+                        "(defaults to '24bit')")
 
     # Unlike the other arguments, this one doesn't expect a value
     parser.add_argument("-i", "--ignore", action="store_true",
