@@ -49,6 +49,11 @@ Example for `.bashrc`:
 harness() { python3 <PROJECT PATH>/harness.py "$@" ;}
 ```
 
+Example for Powershell `$PROFILE`:
+```sh
+harness() { python <PROJECT PATH>\harness.py @args }
+```
+
 >[!NOTE]
 > Using `word` mode allows coloring of different words on the same line
 
