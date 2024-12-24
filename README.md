@@ -51,7 +51,7 @@ harness() { python3 <PROJECT PATH>/harness.py "$@" ;}
 
 Example for Powershell `$PROFILE`:
 ```sh
-harness() { python <PROJECT PATH>\harness.py @args }
+function harness() { python <PROJECT PATH>\harness.py @args }
 ```
 
 >[!NOTE]
